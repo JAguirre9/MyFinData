@@ -11,6 +11,12 @@
     <h1>💰 Mi Control de Gastos</h1>
   </header>
 
+  <section class="balance-section">
+    <h2 id="today">Gastado Hoy: $0</h2>
+    <h3 id="overall">Balance General: $0</h3>
+    <button type="button" id="addIncomeButton">Agregar Ingreso</button>
+  </section>
+
   <section class="form-section">
     <form id="expenseForm">
       <label for="date">Fecha:</label>
@@ -28,6 +34,9 @@
 
       <label for="place">Lugar:</label>
       <input type="text" id="place" placeholder="Ej: Juan Valdez" required>
+
+      <label for="description">Descripción:</label>
+      <input type="text" id="description" placeholder="Ej: Café y croissant" required>
 
       <label for="amount">Monto:</label>
       <input type="number" id="amount" placeholder="Ej: 15000" required>
@@ -51,14 +60,12 @@
           <th>Lugar</th>
           <th>Monto</th>
           <th>Método</th>
-        </tr>
+          </tr>
       </thead>
       <tbody>
-        <!-- Los gastos aparecerán aquí -->
-      </tbody>
+        </tbody>
     </table>
   </section>
 
-  <script src="script.js"></script> <!-- Enlazamos JS -->
+  <script src="script.js"></script> 
 </body>
-</html>
