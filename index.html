@@ -6,66 +6,97 @@
   <title>Control de Gastos</title>
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-  <header>
-    <h1>💰 Mi Control de Gastos</h1>
-  </header>
 
-  <section class="balance-section">
-    <h2 id="today">Gastado Hoy: $0</h2>
-    <h3 id="overall">Balance General: $0</h3>
-    <button type="button" id="addIncomeButton">Agregar Ingreso</button>
-  </section>
+<header>
+  <h1>💰 Mi Control de Gastos</h1>
+</header>
 
-  <section class="form-section">
-    <form id="expenseForm">
-      <label for="date">Fecha:</label>
-      <input type="date" id="date" required>
+<section class="initial-balance-section">
 
-      <label for="category">Categoría:</label>
-      <select id="category">
-        <option value="Take Out / Dine In">Take Out / Dine In</option>
-        <option value="Health">Health</option>
-        <option value="Groceries">Groceries</option>
-        <option value="Transportation">Transportation</option>
-        <option value="Debt">Debt</option>
-        <option value="Other">Other</option>
-      </select>
+  <h2 id="totalInitial" class="center">Valor Inicial Total: $0</h2>
 
-      <label for="place">Lugar:</label>
-      <input type="text" id="place" placeholder="Ej: Juan Valdez" required>
+  <div class="initial-boxes">
 
-      <label for="description">Descripción:</label>
-      <input type="text" id="description" placeholder="Ej: Café y croissant" required>
+    <div class="box" id="cashBox">
+      <h3 id="cashInitial">Valor Inicial Cash: $0</h3>
+    </div>
 
-      <label for="amount">Monto:</label>
-      <input type="number" id="amount" placeholder="Ej: 15000" required>
+    <div class="box" id="cardBox">
+      <h3 id="cardInitial">Valor Inicial Card: $0</h3>
+    </div>
 
-      <label for="method">Método de pago:</label>
-      <select id="method">
-        <option value="Cash">Cash</option>
-        <option value="Card">Card</option>
-      </select>
+    <div class="box" id="todayBox">
+      <h3 id="today">Gastado Hoy: $0</h3>
+    </div>
 
-      <button type="submit">Agregar Gasto</button>
-    </form>
-  </section>
+  </div>
 
-  <section class="table-section">
-    <table id="expenseTable">
-      <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Categoría</th>
-          <th>Lugar</th>
-          <th>Monto</th>
-          <th>Método</th>
-          </tr>
-      </thead>
-      <tbody>
-        </tbody>
-    </table>
-  </section>
+  <button id="setInitialValues">Establecer Valores Iniciales</button>
+</section>
 
-  <script src="script.js"></script> 
+<section class="form-section">
+
+  <form id="expenseForm">
+
+    <div class="form-row">
+      <div class="form-left">
+        <label for="date">Fecha:</label>
+        <input type="date" id="date" required>
+
+        <label for="place">Lugar:</label>
+        <input type="text" id="place" placeholder="Ej: Juan Valdez" required>
+
+        <label for="description">Descripción:</label>
+        <input type="text" id="description" placeholder="Ej: Café y croissant" required>
+      </div>
+
+      <div class="form-right">
+        <label for="category">Categoría:</label>
+        <select id="category">
+          <option value="Take Out / Dine In">Take Out / Dine In</option>
+          <option value="Health">Health</option>
+          <option value="Groceries">Groceries</option>
+          <option value="Transportation">Transportation</option>
+          <option value="Debt">Debt</option>
+          <option value="Other">Other</option>
+        </select>
+
+        <label for="amount">Monto:</label>
+        <input type="number" id="amount" placeholder="Ej: 15000" required>
+
+        <label for="method">Método de pago:</label>
+        <select id="method">
+          <option value="Cash">Cash</option>
+          <option value="Card">Card</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="btn-section">
+      <button type="submit" class="btn-add">Agregar Gasto</button>
+    </div>
+
+  </form>
+
+</section>
+
+<section class="table-section">
+  <table id="expenseTable">
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Categoría</th>
+        <th>Lugar</th>
+        <th>Monto</th>
+        <th>Método</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+<script src="script.js"></script>
 </body>
+</html>

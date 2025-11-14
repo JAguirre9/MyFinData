@@ -1,90 +1,265 @@
-/* Root Styles*/
+* { box-sizing: border-box; }
+html,body { height: 100%; }
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f4f6f8;
   margin: 0;
-  padding: 0;
-  color: #333;
+  font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+  background: #f4f6f8;
+  color: #222;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.4;
 }
 
+/* Header */
 header {
-  background-color: #673ab7;
-  color: white;
+  background: #1f2937;
+  padding: 18px 12px;
   text-align: center;
-  padding: 1rem 0;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
 }
-
-/* Section */
-
-.balance-section {
-    text-align: center;
-}
-
-
-/* form */
-.form-section {
-  background-color: white;
-  margin: 2rem auto;
-  padding: 1.5rem;
-  max-width: 600px;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-label {
+header h1 {
+  color: #fff;
+  margin: 0;
+  font-size: 20px;
   font-weight: 600;
 }
 
-input, select, button {
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+/* INITIAL BALANCE SECTION*/
+.initial-balance-section {
+  max-width: 1100px;
+  margin: 20px auto;
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(16,24,40,0.06);
+  text-align: center;
 }
 
-button {
-  background-color: #673ab7;
-  color: white;
+
+#totalInitial {
+  margin: 0 0 16px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+}
+
+/*INitial three boxes */
+.initial-boxes {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: stretch;
+}
+
+
+.box {
+  flex: 1 1 0;
+  min-width: 0; 
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  border: 1px solid #eef2f7;
+  padding: 16px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(16,24,40,0.04);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+
+.box h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+
+.box p {
+  margin: 10px 0 0 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #0b1320;
+}
+
+
+#setInitialValues {
+  margin-top: 16px;
+  padding: 10px 18px;
+  border-radius: 8px;
   border: none;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 600;
   cursor: pointer;
-  font-weight: bold;
-  transition: background-color 0.2s ease;
+}
+#setInitialValues:hover { transform: translateY(-2px); transition: .12s ease; }
+
+/* =============================
+   FORM SECTION (dos columnas)
+   ============================= */
+.form-section {
+  max-width: 1100px;
+  margin: 20px auto;
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(16,24,40,0.06);
 }
 
-button:hover {
-  background-color: #5a2ea6;
+/* El formulario en columna para controlar orden (left + right + button) */
+#expenseForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-/* Table*/
+/* Row que contiene las dos cajas */
+.form-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+/* cajas izquierda y derecha */
+.form-left,
+.form-right {
+  flex: 1 1 0;
+  min-width: 0;
+  background: #fbfdff;
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid #eef2f7;
+  box-shadow: 0 2px 8px rgba(16,24,40,0.03);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Inputs y selects ocupan todo el ancho */
+.form-left input,
+.form-right input,
+.form-left select,
+.form-right select,
+.form-left textarea,
+.form-right textarea {
+  width: 100%;
+  padding: 10px 12px;
+  margin-top: 8px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  border: 1px solid #d6ddef;
+  font-size: 14px;
+  background: #fff;
+  color: #111827;
+}
+
+/* Labels */
+.form-left label,
+.form-right label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 13px;
+}
+
+/* Botón en su propia sección: centrado y abajo */
+.btn-section {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 6px;
+}
+
+/* botón principal */
+.btn-add {
+  margin-top: 16px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: none;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-add:hover { transform: translateY(-2px); transition: .12s ease; }
+
+/* =============================
+   TABLE SECTION
+   ============================= */
 .table-section {
-  max-width: 800px;
-  margin: 2rem auto;
+  max-width: 1100px;
+  margin: 20px auto;
+  background: #ffffff;
+  padding: 12px;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(16,24,40,0.04);
   overflow-x: auto;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  background-color: white;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  min-width: 640px; 
 }
 
-th, td {
+thead th {
+  text-align: center;
+  background: #2563eb;
+  color: white;
   padding: 12px;
-  text-align: left;
-  border-bottom: 1px solid #ddd;
+  font-weight: 600;
 }
 
-th {
-  background-color: #ede7f6;
+tbody td {
+  padding: 12px;
+  text-align: center;
+  border-bottom: 1px solid #eef2f7;
+  vertical-align: middle;
+  color: #111827;
 }
 
-tr:hover {
-  background-color: #f1f1f1;
+/* =============================
+   Responsive
+   ============================= */
+@media (max-width: 900px) {
+  .initial-boxes {
+    flex-direction: column;
+  }
+  .box { width: 100%; }
+
+  .form-row {
+    flex-direction: column;
+  }
+
+  .form-left,
+  .form-right {
+    width: 100%;
+  }
+
+  table {
+    min-width: 520px;
+  }
+}
+
+@media (max-width: 480px) {
+  header h1 { font-size: 18px; }
+
+  #totalInitial { font-size: 18px; }
+  .box h3 { font-size: 15px; }
+  .box p { font-size: 18px; }
+
+  .form-left input,
+  .form-right input,
+  .form-left select,
+  .form-right select {
+    padding: 9px;
+    font-size: 14px;
+  }
+
+  .btn-add {
+    width: 95%;
+    padding: 12px;
+  }
+
+  table {
+    font-size: 13px;
+  }
 }
