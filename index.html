@@ -40,40 +40,37 @@
 
   <form id="expenseForm">
 
-    <div class="form-row">
-      <div class="form-left">
-        <label for="date">Fecha:</label>
-        <input type="date" id="date" required>
+    <div class="form-left">
+      <label for="date">Fecha:</label>
+      <input type="date" id="date" required>
 
-        <label for="place">Lugar:</label>
-        <input type="text" id="place" placeholder="Ej: Juan Valdez" required>
+      <label for="place">Lugar:</label>
+      <input type="text" id="place" placeholder="Ej: Juan Valdez" required>
 
-        <label for="description">Descripción:</label>
-        <input type="text" id="description" placeholder="Ej: Café y croissant" required>
-      </div>
-
-      <div class="form-right">
-        <label for="category">Categoría:</label>
-        <select id="category">
-          <option value="Take Out / Dine In">Take Out / Dine In</option>
-          <option value="Health">Health</option>
-          <option value="Groceries">Groceries</option>
-          <option value="Transportation">Transportation</option>
-          <option value="Debt">Debt</option>
-          <option value="Other">Other</option>
-        </select>
-
-        <label for="amount">Monto:</label>
-        <input type="number" id="amount" placeholder="Ej: 15000" required>
-
-        <label for="method">Método de pago:</label>
-        <select id="method">
-          <option value="Cash">Cash</option>
-          <option value="Card">Card</option>
-        </select>
-      </div>
+      <label for="description">Descripción:</label>
+      <input type="text" id="description" placeholder="Ej: Café y croissant" required>
     </div>
 
+    <div class="form-right">
+      <label for="category">Categoría:</label>
+      <select id="category">
+        <option value="Take Out / Dine In">Take Out / Dine In</option>
+        <option value="Health">Health</option>
+        <option value="Groceries">Groceries</option>
+        <option value="Transportation">Transportation</option>
+        <option value="Debt">Debt</option>
+        <option value="Other">Other</option>
+      </select>
+
+      <label for="amount">Monto:</label>
+      <input type="number" id="amount" placeholder="Ej: 15000" required>
+
+      <label for="method">Método de pago:</label>
+      <select id="method">
+        <option value="Cash">Cash</option>
+        <option value="Card">Card</option>
+      </select>
+    </div>
     <div class="btn-section">
       <button type="submit" class="btn-add">Agregar Gasto</button>
     </div>
