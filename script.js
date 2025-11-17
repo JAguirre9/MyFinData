@@ -18,8 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
       keysToClear.forEach(key => {
           localStorage.removeItem(key);
       });
-      // OPTIONAL: You might want to remove the alert, but it's good for confirmation.
-      // alert("DEMO MODE ACTIVE: All previous data has been cleared.");
   }
 
 
