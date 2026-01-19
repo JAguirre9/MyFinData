@@ -1,264 +1,339 @@
 document.addEventListener('DOMContentLoaded', () => {
+  /*🚩 CONFIGURATION & FLAGS - CHANGED: Set to true so your data DOES NOT wipe on every refresh*/
+  const IS_PROD = true; 
 
-  // 🚩 FLAG FOR DEMO MODE 🚩
-  // Set to 'true' to ensure the app starts clean for the buyer/demo.
-  // Set to 'false' for regular development or user operation.
-  const IS_DEMO_MODE = true; 
-  
-  // If the flag is true, clear all user data immediately upon load.
-  if (IS_DEMO_MODE) {
-      const keysToClear = [
-          'initialCash', 
-          'initialCard', 
-          'myOverallBalance', 
-          'myTodaysBalance', 
-          'lastVisitDate',
-          'myExpenses' 
-      ];
-      keysToClear.forEach(key => {
-          localStorage.removeItem(key);
+  const CONFIG = {
+    SHEETS_URL: 'YOUR_WEB_APP_URL_HERE', 
+    GROQ_KEY: 'YOUR_API_KEY_HERE' 
+  };
+
+  const currencyFormat = new Intl.NumberFormat('es-CO', {
+    style: 'currency', currency: 'COP', minimumFractionDigits: 0
+  });
+  const formatCurrency = (amount) => currencyFormat.format(Math.round(amount || 0));
+
+  // Date and Time constants
+  const today = new Date().toISOString().split('T')[0];
+  const currentMonth = today.substring(0, 7);
+  let todaysSpent = parseFloat(localStorage.getItem('myTodaysBalance')) || 0;
+
+  // DEVELOPMENT RESET
+  if (!IS_PROD) {
+    const devResetKeys = [
+      'initialCash', 'initialCard', 'currentCash', 'currentCard',
+      'totalDeposits', 'myExpenses', 'fixedPassives', 'myCustomGoals',
+      'lastProcessedMonth', 'myTodaysBalance'
+    ];
+    devResetKeys.forEach(key => localStorage.removeItem(key));
+    console.log('[DEV MODE] Data reset enabled');
+  }
+
+  // INITIAL STATE (Sync with LocalStorage)
+  let state = {
+    initialCash: parseFloat(localStorage.getItem('initialCash')) || 0,
+    initialCard: parseFloat(localStorage.getItem('initialCard')) || 0,
+    currentCash: parseFloat(localStorage.getItem('currentCash')) || 0,
+    currentCard: parseFloat(localStorage.getItem('currentCard')) || 0,
+    totalDeposits: parseFloat(localStorage.getItem('totalDeposits')) || 0,
+    expenses: JSON.parse(localStorage.getItem('myExpenses')) || [],
+    fixedPassives: JSON.parse(localStorage.getItem('fixedPassives')) || [],
+    goals: JSON.parse(localStorage.getItem('myCustomGoals')) || [],
+    lastProcessedMonth: localStorage.getItem('lastProcessedMonth') || ""
+  };
+
+  // DOM Elements mapping
+  const els = {
+    overall: document.getElementById('overall'),
+    cashInitial: document.getElementById('cashInitial'),
+    cardInitial: document.getElementById('cardInitial'),
+    todaySpent: document.getElementById('today'),
+    statIngresos: document.querySelector('.stat-card-positive .value'),
+    statGastos: document.querySelector('.stat-card-negative .value'),
+    statAhorro: document.querySelector('.stat-card-neutral .value'),
+    progressBar: document.querySelector('.big-progress'),
+    progressText: document.querySelector('.progress-label'),
+    chatLog: document.getElementById('chatLog'),
+    expenseTableBody: document.querySelector('#expenseTable tbody'),
+    passivesList: document.getElementById('wishlistList'),
+    passivesTotal: document.getElementById('wishlistTotal'),
+    goalsContainer: document.getElementById('goalsContainer'),
+    goalFormContainer: document.getElementById('goalFormContainer'),
+    // Forms
+    initialSetupForm: document.getElementById('initialSetupForm'),
+    depositForm: document.getElementById('depositForm'),
+    wishlistForm: document.getElementById('wishlistForm'),
+    expenseForm: document.getElementById('expenseForm')
+  };
+
+  // AUTOMATIC MONTHLY PASSIVES DEDUCTION
+
+  function processAutoMonthlyPassives() {
+    if (state.lastProcessedMonth !== currentMonth && state.fixedPassives.length > 0) {
+      const totalToDeduct = state.fixedPassives.reduce((sum, p) => sum + Number(p.amount), 0);
+      state.currentCard = Math.max(0, state.currentCard - totalToDeduct);
+      
+      state.expenses.push({
+        date: today,
+        place: "System",
+        description: "Monthly Passive Auto-Deduction",
+        category: "Pasivos Fijos",
+        amount: totalToDeduct,
+        method: "Tarjeta"
       });
+      
+      state.lastProcessedMonth = currentMonth;
+      localStorage.setItem('lastProcessedMonth', currentMonth);
+      localStorage.setItem('currentCard', state.currentCard);
+      localStorage.setItem('myExpenses', JSON.stringify(state.expenses));
+      alert(`📅 New Month: ${formatCurrency(totalToDeduct)} deducted from Card.`);
+    }
   }
 
+  // UI UPDATE ENGINE
 
-  // Global variables
-  let overallBalance = 0;
-  let todaysBalance = 0;
-  const todayString = new Date().toLocaleDateString();
-  const EXPENSE_STORAGE_KEY = 'myExpenses'; 
+  function updateAllUI() {
+    const totalExpenses = state.expenses.reduce((sum, exp) => sum + Number(exp.amount), 0);
+    const totalIncomes = state.initialCash + state.initialCard + state.totalDeposits;
+    const currentBalance = state.currentCash + state.currentCard;
+    const netSavings = totalIncomes - totalExpenses;
 
-  // New initial values
-  let initialCash = parseFloat(localStorage.getItem('initialCash')) || 0;
-  let initialCard = parseFloat(localStorage.getItem('initialCard')) || 0;
-  let expenses = JSON.parse(localStorage.getItem(EXPENSE_STORAGE_KEY)) || [];
+    if(els.statIngresos) els.statIngresos.textContent = formatCurrency(totalIncomes);
+    if(els.statGastos) els.statGastos.textContent = formatCurrency(totalExpenses);
+    if(els.statAhorro) els.statAhorro.textContent = formatCurrency(netSavings);
+    if(els.overall) els.overall.textContent = `Balance General: ${formatCurrency(currentBalance)}`;
+    if(els.cashInitial) els.cashInitial.textContent = `Efectivo: ${formatCurrency(state.currentCash)}`;
+    if(els.cardInitial) els.cardInitial.textContent = `Tarjeta: ${formatCurrency(state.currentCard)}`;
+    if(els.todaySpent) els.todaySpent.textContent = `Gastado Hoy: ${formatCurrency(todaysSpent)}`;
 
-
-  // DOM Elements
-  const tableBody = document.getElementById('expenseTable') ?
-    document.getElementById('expenseTable').querySelector('tbody') :
-    null;
-  const form = document.getElementById('expenseForm');
-  const setInitialButton = document.getElementById('setInitialValues');
-
-
-  // --- UI Update Functions ---
-  function updateInitialUI() {
-    if (document.getElementById("cashInitial")) {
-      document.getElementById("cashInitial").textContent =
-        `Valor Inicial Cash: $${initialCash.toLocaleString()}`;
+    if (totalIncomes > 0 && els.progressBar) {
+      const percent = Math.min(100, Math.round((totalExpenses / totalIncomes) * 100));
+      els.progressBar.value = percent;
+      els.progressText.textContent = `${percent}% of budget used`;
     }
-    if (document.getElementById("cardInitial")) {
-      document.getElementById("cardInitial").textContent =
-        `Valor Inicial Card: $${initialCard.toLocaleString()}`;
+
+    updatePassivesUI();
+    updateExpenseTable();
+    updateGoalsUI();
+  }
+
+  function updatePassivesUI() {
+    if (!els.passivesList) return;
+    els.passivesList.innerHTML = '';
+    let total = 0;
+    state.fixedPassives.forEach((item, index) => {
+      total += Number(item.amount);
+      const li = document.createElement('li');
+      li.style.cssText = "display: flex; justify-content: space-between; margin-bottom: 5px; background: #f8fafc; padding: 5px 10px; border-radius: 5px;";
+      li.innerHTML = `<span>${item.name}</span> <span><b>${formatCurrency(item.amount)}</b> 
+                      <button onclick="deletePassive(${index})" style="color:red; background:none; border:none; cursor:pointer; font-weight:bold; margin-left:10px;">×</button></span>`;
+      els.passivesList.appendChild(li);
+    });
+    if(els.passivesTotal) els.passivesTotal.textContent = `Total Pasivos: ${formatCurrency(total)}`;
+  }
+
+  function updateExpenseTable() {
+    if (!els.expenseTableBody) return;
+    els.expenseTableBody.innerHTML = '';
+    [...state.expenses].reverse().slice(0, 5).forEach(exp => {
+      const row = els.expenseTableBody.insertRow();
+      row.innerHTML = `<td>${exp.date}</td><td>${exp.category}</td><td>${exp.description}</td><td>${exp.place}</td><td>${formatCurrency(exp.amount)}</td><td>${exp.method}</td>`;
+    });
+  }
+
+  // CUSTOM GOALS LOGIC (CRUD)
+
+  document.getElementById('btnNewGoal')?.addEventListener('click', () => {
+    els.goalFormContainer.style.display = els.goalFormContainer.style.display === 'none' ? 'block' : 'none';
+  });
+
+  document.getElementById('goalForm')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = document.getElementById('goalName').value.trim();
+    const target = parseInt(document.getElementById('goalTarget').value) || 0;
+    if (name && target > 0) {
+      state.goals.push({ id: Date.now(), nombre: name, objetivo: target });
+      localStorage.setItem('myCustomGoals', JSON.stringify(state.goals));
+      updateAllUI();
+      e.target.reset();
+      els.goalFormContainer.style.display = 'none';
     }
-    if (document.getElementById("totalInitial")) {
-      document.getElementById("totalInitial").textContent =
-        `Valor Inicial Total: $${(initialCash + initialCard).toLocaleString()}`;
-    }
+  });
+
+  window.deleteGoal = (id) => {
+    state.goals = state.goals.filter(g => g.id !== id);
+    localStorage.setItem('myCustomGoals', JSON.stringify(state.goals));
+    updateAllUI();
+  };
+
+  function updateGoalsUI() {
+    if (!els.goalsContainer) return;
+    els.goalsContainer.innerHTML = '';
     
-    checkInitialValuesSet();
-  }
+    const totalSavings = state.expenses
+      .filter(exp => exp.category === "Ahorro" || exp.category === "Ahorro / Inversión")
+      .reduce((sum, exp) => sum + Number(exp.amount), 0);
 
-  function updateBalanceUI() {
-    if (document.getElementById('overall')) {
-      document.getElementById('overall').textContent =
-        `Balance General: $${overallBalance.toLocaleString()}`;
-    }
-    if (document.getElementById('today')) {
-      document.getElementById('today').textContent =
-        `Gastado Hoy: $${todaysBalance.toLocaleString()}`;
-    }
-  }
+    let remaining = totalSavings;
 
-  function addRowToTable(expense) {
-    if (!tableBody) return;
-    const newRow = document.createElement('tr');
-    newRow.innerHTML = `
-      <td>${expense.date}</td>
-      <td>${expense.category}</td>
-      <td>${expense.place}</td>
-      <td>$${expense.amount.toLocaleString()}</td>
-      <td>${expense.method}</td>
-    `;
-    tableBody.appendChild(newRow);
-  }
+    state.goals.forEach(meta => {
+      const reached = Math.min(remaining, meta.objetivo);
+      remaining -= reached;
+      const percent = Math.round((reached / meta.objetivo) * 100) || 0;
 
-  function loadExpenses() {
-    if (tableBody) {
-      tableBody.innerHTML = ''; 
-      expenses.forEach(addRowToTable);
-    }
-  }
-  
-  function checkInitialValuesSet() {
-      if (setInitialButton && (initialCash > 0 || initialCard > 0)) {
-          setInitialButton.disabled = true;
-          setInitialButton.textContent = "Valores Iniciales Establecidos";
-          setInitialButton.title = "Usa el botón 'Añadir Dinero' para incrementar el balance.";
-      } else if (setInitialButton) {
-          setInitialButton.disabled = false;
-          setInitialButton.textContent = "Establecer Valores Iniciales";
-      }
-  }
-
-
-  // --- Initialization Logic ---
-  
-  updateInitialUI(); 
-  
-  // load general balance (use initial values if overall is missing)
-  overallBalance = parseFloat(localStorage.getItem('myOverallBalance')) || (initialCash + initialCard); 
-  
-  // daily spent 
-  const lastVisitDate = localStorage.getItem('lastVisitDate') || '';
-
-  if (todayString === lastVisitDate) {
-    todaysBalance = parseFloat(localStorage.getItem('myTodaysBalance')) || 0;
-  } else {
-    todaysBalance = 0;
-    localStorage.setItem('myTodaysBalance', '0');
-    localStorage.setItem('lastVisitDate', todayString);
-  }
-
-  updateBalanceUI();
-  loadExpenses();
-
-
-  // --- Feature 1: Set/Update Initial Values ---
-  if (setInitialButton) {
-      setInitialButton.addEventListener('click', () => {
-      const newCash = parseFloat(prompt("Ingresa el valor inicial Cash:", initialCash));
-      const newCard = parseFloat(prompt("Ingresa el valor inicial Card:", initialCard));
-
-      if (!isNaN(newCash) && newCash >= 0 && !isNaN(newCard) && newCard >= 0) {
-          
-          if (initialCash === 0 && initialCard === 0) {
-              overallBalance = newCash + newCard;
-          }
-
-          initialCash = newCash;
-          initialCard = newCard;
-          
-          localStorage.setItem("initialCash", initialCash);
-          localStorage.setItem("initialCard", initialCard);
-          localStorage.setItem('myOverallBalance', overallBalance);
-          
-          alert("Valores iniciales establecidos exitosamente.");
-      } else {
-          alert("Valores inválidos. Por favor, ingrese números válidos.");
-      }
-
-      updateInitialUI();
-      updateBalanceUI();
+      const card = document.createElement('div');
+      card.className = 'goal-card';
+      card.style.cssText = "background:white; padding:1.2rem; border-radius:12px; border:1px solid #e2e8f0; position:relative; margin-bottom:10px;";
+      card.innerHTML = `
+        <button onclick="deleteGoal(${meta.id})" style="position:absolute; top:5px; right:10px; border:none; background:none; cursor:pointer;">×</button>
+        <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:5px;">
+          <span>${meta.nombre}</span><span>${percent}%</span>
+        </div>
+        <progress value="${reached}" max="${meta.objetivo}" style="width:100%; height:10px;"></progress>
+        <div style="font-size:0.8rem; color:gray; margin-top:5px;">${formatCurrency(reached)} / ${formatCurrency(meta.objetivo)}</div>
+      `;
+      els.goalsContainer.appendChild(card);
     });
   }
 
 
-  // --- Feature 2: Deposit/Add Money ---
-  if (document.getElementById('addMoney')) {
-      document.getElementById('addMoney').addEventListener('click', () => {
-      const depositAmount = parseFloat(prompt("Ingresa el monto a depositar:", 0));
-      const depositMethod = prompt("Depositar a (Cash/Card):", "Cash");
+  // DATA ENTRY EVENTS (FIXED)
+  // FIX 1: Initial Balances
+  els.initialSetupForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const cash = parseInt(document.getElementById('initialCashInput').value) || 0;
+    const card = parseInt(document.getElementById('initialCardInput').value) || 0;
+    
+    state.initialCash = cash;
+    state.initialCard = card;
+    state.currentCash = cash;
+    state.currentCard = card;
 
-      if (isNaN(depositAmount) || depositAmount <= 0) {
-          alert("Monto de depósito inválido!");
-          return;
-      }
+    localStorage.setItem('initialCash', cash);
+    localStorage.setItem('initialCard', card);
+    localStorage.setItem('currentCash', cash);
+    localStorage.setItem('currentCard', card);
 
-      overallBalance += depositAmount;
+    document.getElementById('initialSetupFormContainer').style.display = 'none';
+    updateAllUI();
+    console.log("Initial balances set:", {cash, card});
+  });
 
-      if (depositMethod && depositMethod.toLowerCase() === "cash") {
-          initialCash += depositAmount;
-          localStorage.setItem("initialCash", initialCash);
-          alert(`Depósito de $${depositAmount.toLocaleString()} añadido a Cash.`);
-      } else if (depositMethod && depositMethod.toLowerCase() === "card") {
-          initialCard += depositAmount;
-          localStorage.setItem("initialCard", initialCard);
-          alert(`Depósito de $${depositAmount.toLocaleString()} añadido a Card.`);
+  // FIX 2: Deposit Money (Added missing listener)
+  els.depositForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const amount = parseInt(document.getElementById('depositAmount').value) || 0;
+    const method = document.getElementById('depositMethod').value;
+
+    if (amount > 0) {
+      state.totalDeposits += amount;
+      if (method === 'Cash' || method === 'Efectivo') {
+        state.currentCash += amount;
       } else {
-          alert("Método de depósito no reconocido. Se agregó solo al Balance General.");
+        state.currentCard += amount;
       }
 
-      localStorage.setItem('myOverallBalance', overallBalance);
-      updateInitialUI();
-      updateBalanceUI();
-    });
-  }
+      localStorage.setItem('totalDeposits', state.totalDeposits);
+      localStorage.setItem('currentCash', state.currentCash);
+      localStorage.setItem('currentCard', state.currentCard);
+
+      document.getElementById('depositFormContainer').style.display = 'none';
+      updateAllUI();
+      e.target.reset();
+      console.log("Deposit registered:", {amount, method});
+    }
+  });
+
+  // FIX 3: Fixed Passives
+  els.wishlistForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = document.getElementById('itemName').value.trim();
+    const amount = parseInt(document.getElementById('itemPrice').value) || 0;
+
+    if (name && amount > 0) {
+      state.fixedPassives.push({ name, amount });
+      localStorage.setItem('fixedPassives', JSON.stringify(state.fixedPassives));
+      updateAllUI();
+      e.target.reset();
+      console.log("Passive added:", {name, amount});
+    }
+  });
+
+  // Expense Form
+  els.expenseForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const amount = parseInt(document.getElementById('amount').value) || 0;
+    const method = document.getElementById('method').value;
+    const expense = {
+      date: document.getElementById('date').value,
+      place: document.getElementById('place').value,
+      description: document.getElementById('description').value,
+      category: document.getElementById('category').value,
+      amount, method
+    };
+    
+    state.expenses.push(expense);
+    if (method === 'Efectivo') state.currentCash -= amount; else state.currentCard -= amount;
+    
+    if (expense.date === today) { 
+      todaysSpent += amount; 
+      localStorage.setItem('myTodaysBalance', todaysSpent); 
+    }
+
+    localStorage.setItem('myExpenses', JSON.stringify(state.expenses));
+    localStorage.setItem('currentCash', state.currentCash);
+    localStorage.setItem('currentCard', state.currentCard);
+    updateAllUI();
+    e.target.reset();
+  });
+
+  window.deletePassive = (index) => {
+    state.fixedPassives.splice(index, 1);
+    localStorage.setItem('fixedPassives', JSON.stringify(state.fixedPassives));
+    updateAllUI();
+  };
 
 
-  // --- Feature 3: Add Expense ---
-  // ... (Your existing expense submission logic) ...
-  if (form) {
-    form.addEventListener('submit', async (event) => {
-      event.preventDefault();
+  // FINBOT AI LOGIC
 
-      const date = document.getElementById('date').value;
-      const place = document.getElementById('place').value;
-      const method = document.getElementById('method').value;
-      const category = document.getElementById('category').value;
-      const description = document.getElementById('description').value;
-      const amount = parseFloat(document.getElementById('amount').value);
+  document.getElementById('aiForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const query = document.getElementById('aiQuery').value.trim();
+    if (!query) return;
 
-      if (isNaN(amount) || amount <= 0) {
-        alert("Monto inválido!");
-        return;
-      }
+    const log = (msg, isBot) => {
+      const p = document.createElement('p');
+      p.style.cssText = `padding:8px; border-radius:8px; margin-bottom:8px; font-size:0.85rem; ${isBot ? 'background:#2563eb; color:white;' : 'background:#eee; text-align:right;'}`;
+      p.innerHTML = `<strong>${isBot ? 'FinBot' : 'You'}:</strong> ${msg}`;
+      els.chatLog.appendChild(p);
+      els.chatLog.scrollTop = els.chatLog.scrollHeight;
+    };
 
-      const newExpense = {
-          date,
-          place,
-          method,
-          category,
-          description,
-          amount
-      };
+    log(query, false);
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${CONFIG.GROQ_KEY}` },
+        body: JSON.stringify({
+          model: 'llama3-8192',
+          messages: [{ role: 'system', content: 'You are FinBot, a concise financial coach.' }, { role: 'user', content: query }]
+        })
+      });
+      const data = await res.json();
+      log(data.choices[0].message.content, true);
+    } catch (err) { log("Error connecting to AI", true); }
+    e.target.reset();
+  });
 
-      // 1. Add row and persist expense
-      addRowToTable(newExpense);
-      expenses.push(newExpense);
-      localStorage.setItem(EXPENSE_STORAGE_KEY, JSON.stringify(expenses)); 
+  // Buttons for showing forms
+  document.getElementById('setInitialValues')?.addEventListener('click', () => {
+    document.getElementById('initialSetupFormContainer').style.display = 'block';
+  });
 
-      // 2. Update initial balances (Money available in cash/card)
-      if (method === "Cash") {
-        initialCash -= amount;
-        localStorage.setItem("initialCash", initialCash);
-      } else {
-        initialCard -= amount;
-        localStorage.setItem("initialCard", initialCard);
-      }
+  document.getElementById('addMoney')?.addEventListener('click', () => {
+    document.getElementById('depositFormContainer').style.display = 'block';
+  });
 
-      updateInitialUI();
-
-      // 3. Update overall and daily balances
-      overallBalance -= amount;
-      todaysBalance += amount;
-
-      localStorage.setItem('myOverallBalance', overallBalance);
-      localStorage.setItem('myTodaysBalance', todaysBalance);
-      localStorage.setItem('lastVisitDate', todayString);
-      updateBalanceUI();
-
-
-      // 4. Send to google sheets - DB 
-      const dataToSend = { date, place, method, category, description, amount };
-
-      try {
-        const response = await fetch(
-          "YOUR_GOOGLE_SCRIPT_URL_HERE",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(dataToSend)
-          }
-        );
-
-        if (!response.ok) alert("❌ Error enviando a Google Sheets");
-      } catch (err) {
-        console.log(err);
-      }
-
-      form.reset();
-      alert("Gasto agregado!");
-    });
-  }
+  // INITIALIZE
+  processAutoMonthlyPassives();
+  updateAllUI();
 });

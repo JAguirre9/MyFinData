@@ -1,104 +1,201 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Control de Gastos</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fluxo - Dashboard Financiero</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 </head>
-
 <body>
 
 <header>
-  <h1>💰 Mi Control de Gastos</h1>
+  <h1>Fluxo</h1>
 </header>
 
-<section class="initial-balance-section">
+<main class="grid-container">
+
+<section class="quadrant-full-width-top-highlight-dashboard">
+  <h2>Your Financial Update</h2>
   
-  <h2 id="overall" class="center">Balance General: $0</h2>
-
-  <h2 id="totalInitial" class="center">Valor Inicial Total: $0</h2>
-  
-  <div class="initial-boxes">
-    <div class="box" id="cashBox">
-      <h3 id="cashInitial">Valor Inicial Cash: $0</h3>
+  <div class="quick-overview">
+    <div class="main-progress">
+      <h3>Monthly Progress</h3>
+      <div class="progress-container">
+        <progress value="0" max="100" class="big-progress"></progress>
+        <div class="progress-label">0% del presupuesto mensual utilizado</div>
+      </div>
     </div>
 
-    <div class="box" id="cardBox">
-      <h3 id="cardInitial">Valor Inicial Card: $0</h3>
+    <div class="stats-grid">
+      <div class="stat-card-positive">
+        <div class="icon">↑</div>
+        <div class="value">$0</div>
+        <div class="label">Ingresos este mes</div>
+      </div>
+      
+      <div class="stat-card-negative">
+        <div class="icon">↓</div>
+        <div class="value">$0</div>
+        <div class="label">Gastos este mes</div>
+      </div>
+      
+      <div class="stat-card-neutral">
+        <div class="icon">★</div>
+        <div class="value">$0</div>
+        <div class="label">Ahorro neto</div>
+      </div>
     </div>
-
-    <div class="box" id="todayBox">
-      <h3 id="today">Gastado Hoy: $0</h3>
-    </div>
-
   </div>
-  
-  <div class="balance-controls">
-    <button id="setInitialValues">Establecer Valores Iniciales</button>
-    
-    <button id="addMoney">Depositar Dinero</button> 
-  </div>
-
 </section>
 
-<section class="form-section">
+<section class="quadrant-top-left">
+  <h2>Account Balance</h2>
+  <div class="balance-status" style="text-align: center; margin-bottom: 2rem; margin-top: 1rem;">
+    <span id="overall" class="big-balance">Balance General: $0</span>
+  </div>
 
-  <form id="expenseForm">
-
-    <div class="form-left">
-      <label for="date">Fecha:</label>
-      <input type="date" id="date" required>
-
-      <label for="place">Lugar:</label>
-      <input type="text" id="place" placeholder="Ej: Juan Valdez" required>
-
-      <label for="description">Descripción:</label>
-      <input type="text" id="description" placeholder="Ej: Café y croissant" required>
+  <div class="other-balances">
+    <div class="balance-column">
+      <p id="cashInitial">Efectivo: $0</p>
     </div>
+    <div class="balance-column">
+      <p id="cardInitial">Tarjeta: $0</p>
+      <p id="today">Gastado Hoy: $0</p>
+    </div>
+  </div>
 
-    <div class="form-right">
-      <label for="category">Categoría:</label>
-      <select id="category">
-        <option value="Take Out / Dine In">Take Out / Dine In</option>
-        <option value="Health">Health</option>
-        <option value="Groceries">Groceries</option>
-        <option value="Transportation">Transportation</option>
-        <option value="Debt">Debt</option>
-        <option value="Other">Other</option>
+  <div class="actions">
+    <button id="setInitialValues">Saldos Iniciales</button>
+    <button id="addMoney">+ Depósito</button>
+  </div>
+
+  <div id="initialSetupFormContainer" style="display:none; margin-top: 1.5rem; padding: 1rem; background: var(--bg-accent); border-radius: var(--radius);">
+    <form id="initialSetupForm">
+      <input type="number" id="initialCashInput" placeholder="Efectivo inicial" required/>
+      <input type="number" id="initialCardInput" placeholder="Tarjeta inicial" required/>
+      <button type="submit" style="width: 100%; margin-top: 0.5rem;">Guardar Saldos</button>
+    </form>
+  </div>
+
+  <div id="depositFormContainer" style="display:none; margin-top: 1.5rem; padding: 1rem; background: var(--bg-accent); border-radius: var(--radius);">
+    <form id="depositForm">
+      <input type="number" id="depositAmount" placeholder="Monto del depósito" required/>
+      <select id="depositMethod">
+        <option value="Cash">Efectivo</option>
+        <option value="Card">Tarjeta</option>
       </select>
+      <button type="submit" style="width: 100%; margin-top: 0.5rem;">Confirmar Depósito</button>
+    </form>
+  </div>
+</section>
 
-      <label for="amount">Monto:</label>
-      <input type="number" id="amount" placeholder="Ej: 15000" required>
+<section class="quadrant-top-right">
+  <h2>Fixed Monthly Expenses</h2>
+  <form id="wishlistForm">
+    <input type="text" id="itemName" placeholder="Ej: Netflix, Gym, Internet" required/>
+    <input type="number" id="itemPrice" placeholder="Monto mensual" required/>
+    <button type="submit" style="width: 100%; margin-top: 0.5rem;">+ Añadir Pasivo Fijo</button>
+  </form>
+  
+  <ul id="wishlistList" style="list-style: none; margin-top: 1.5rem; max-height: 200px; overflow-y: auto;">
+    </ul>
 
-      <label for="method">Método de pago:</label>
+  <p id="wishlistTotal" style="font-weight: 700; text-align: center; margin-top: 1.5rem; padding: 0.5rem; background: var(--bg-accent); border-radius: var(--radius);">
+    Total Pasivos: $0
+  </p>
+</section>
+
+<section class="quadrant-bottom-left">
+  <h2>Incurred Cost</h2>
+  <form id="expenseForm" class="form-grid">
+    <div class="form-group">
+      <label>Fecha</label>
+      <input type="date" id="date" required/>
+    </div>
+    <div class="form-group">
+      <label>Lugar</label>
+      <input type="text" id="place" placeholder="Ej: Starbucks" required/>
+    </div>
+    <div class="form-group">
+      <label>Descripción</label>
+      <input type="text" id="description" placeholder="Ej: Café con leche" required/>
+    </div>
+    <div class="form-group">
+      <label>Categoría</label>
+      <select id="category" required>
+        <option value="Comida Fuera">Comida Fuera</option>
+        <option value="Supermercado">Supermercado</option>
+        <option value="Transporte">Transporte</option>
+        <option value="Servicios">Servicios</option>
+        <option value="Ahorro">Ahorro / Inversión</option>
+        <option value="Otros">Otros</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Monto</label>
+      <input type="number" id="amount" placeholder="$0.00" required/>
+    </div>
+    <div class="form-group">
+      <label>Método</label>
       <select id="method">
-        <option value="Cash">Cash</option>
-        <option value="Card">Card</option>
+        <option value="Efectivo">Efectivo</option>
+        <option value="Tarjeta">Tarjeta</option>
       </select>
     </div>
-    <div class="btn-section">
-      <button type="submit" class="btn-add">Agregar Gasto</button>
-    </div>
-
+    <button type="submit" class="btn-add">Agregar Gasto</button>
   </form>
 
+  <div class="table-container">
+    <table id="expenseTable">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Lugar</th>
+          <th>Categoría</th>
+          <th>Monto</th>
+          <th>Método</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 </section>
 
-<section class="table-section">
-  <table id="expenseTable">
-    <thead>
-      <tr>
-        <th>Fecha</th>
-        <th>Categoría</th>
-        <th>Lugar</th>
-        <th>Monto</th>
-        <th>Método</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+<section class="quadrant-bottom-right">
+  <h2>FinBot</h2>
+  <div class="chat-area" id="chatLog"></div>
+  <form id="aiForm">
+    <input type="text" id="aiQuery" placeholder="Ej: ¿Cómo van mis finanzas?"/>
+    <button type="submit">Preguntar</button>
+  </form>
 </section>
+
+<section class="quadrant-full-width-bottom">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h2>Goals & Savings</h2>
+    <button id="btnNewGoal" style="padding: 0.5rem 1rem; font-size: 0.9rem;">+ Nueva Meta</button>
+  </div>
+
+  <div id="goalFormContainer" style="display:none; background: var(--bg-accent); padding: 1.5rem; border-radius: var(--radius); margin-bottom: 1.5rem; border: 1px solid var(--border);">
+    <form id="goalForm" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end;">
+      <div class="form-group">
+        <label>Nombre de la meta</label>
+        <input type="text" id="goalName" placeholder="Ej: Comprar PC" required>
+      </div>
+      <div class="form-group">
+        <label>Valor objetivo ($)</label>
+        <input type="number" id="goalTarget" placeholder="Monto" required>
+      </div>
+      <button type="submit">Guardar Meta</button>
+    </form>
+  </div>
+
+  <div id="goalsContainer" class="goals-grid">
+    </div>
+</section>
+
+</main>
 
 <script src="script.js"></script>
 </body>
