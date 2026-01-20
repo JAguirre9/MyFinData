@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   /*🚩 CONFIGURATION & FLAGS - CHANGED: Set to true so your data DOES NOT wipe on every refresh*/
-  const IS_PROD = true; 
+  const IS_PROD = false; 
 
   const CONFIG = {
     SHEETS_URL: 'YOUR_WEB_APP_URL_HERE', 
@@ -244,18 +244,67 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // FIX 3: Fixed Passives
+    // Fixed Monthly Expenses 
   els.wishlistForm?.addEventListener('submit', (e) => {
     e.preventDefault();
-    const name = document.getElementById('itemName').value.trim();
-    const amount = parseInt(document.getElementById('itemPrice').value) || 0;
 
-    if (name && amount > 0) {
-      state.fixedPassives.push({ name, amount });
-      localStorage.setItem('fixedPassives', JSON.stringify(state.fixedPassives));
-      updateAllUI();
-      e.target.reset();
-      console.log("Passive added:", {name, amount});
+    const name = document.getElementById('itemName').value.trim();
+    const amountStr = document.getElementById('itemPrice').value.trim();
+    const amount = parseFloat(amountStr) || 0;
+
+    if (!name) {
+      alert("Ingresa un nombre para el pasivo fijo");
+      return;
     }
+
+    if (amount <= 0) {
+      alert("El monto debe ser mayor a 0");
+      return;
+    }
+
+    // 1. Agregar el pasivo a la lista
+    state.fixedPassives.push({ name, amount });
+
+    // 2. Deducción inmediata (solo si hay saldo suficiente en tarjeta)
+    let deducted = 0;
+    if (state.currentCard >= amount) {
+      state.currentCard -= amount;
+      deducted = amount;
+    } else if (state.currentCard > 0) {
+      deducted = state.currentCard;
+      state.currentCard = 0;
+      alert(`¡Atención! Solo se pudieron deducir ${formatCurrency(deducted)} porque no hay más saldo en tarjeta.`);
+    } else {
+      alert("No hay saldo suficiente en tarjeta para deducir este pasivo ahora.");
+    }
+
+    // 3. Registrar el movimiento como gasto (si se dedujo algo)
+    if (deducted > 0) {
+      state.expenses.push({
+        date: today,
+        place: "Sistema",
+        description: `Deducción inicial pasivo fijo: ${name}`,
+        category: "Pasivos Fijos",
+        amount: deducted,
+        method: "Tarjeta"
+      });
+    }
+
+    // 4. Guardar todo
+    localStorage.setItem('fixedPassives', JSON.stringify(state.fixedPassives));
+    localStorage.setItem('currentCard', state.currentCard);
+    localStorage.setItem('myExpenses', JSON.stringify(state.expenses));
+
+    // 5. Limpiar y actualizar
+    e.target.reset();
+    updateAllUI();
+
+    console.log("Pasivo fijo creado + deducción:", {
+      name,
+      amountRequested: amount,
+      amountDeducted: deducted,
+      newCard: state.currentCard
+    });
   });
 
   // Expense Form
@@ -335,5 +384,152 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // INITIALIZE
   processAutoMonthlyPassives();
+  updateAllUI();
+
+  // NEW: Initialize goals with reached if not present
+  state.goals = state.goals.map(goal => ({ ...goal, reached: goal.reached || 0 }));
+  localStorage.setItem('myCustomGoals', JSON.stringify(state.goals));
+
+  // Override updateGoalsUI to use per-goal reached and add "Add Money" button
+  const originalUpdateGoalsUI = updateGoalsUI;
+  updateGoalsUI = () => {
+    if (!els.goalsContainer) return;
+    els.goalsContainer.innerHTML = '';
+
+    state.goals.forEach(meta => {
+      const reached = meta.reached || 0;
+      const percent = Math.round((reached / meta.objetivo) * 100) || 0;
+
+      const card = document.createElement('div');
+      card.className = 'goal-card';
+      card.style.cssText = "background:white; padding:1.2rem; border-radius:12px; border:1px solid #e2e8f0; position:relative; margin-bottom:10px;";
+      card.innerHTML = `
+        <button onclick="deleteGoal(${meta.id})" style="position:absolute; top:5px; right:10px; border:none; background:none; cursor:pointer;">×</button>
+        <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:5px;">
+          <span>${meta.nombre}</span><span>${percent}%</span>
+        </div>
+        <progress value="${reached}" max="${meta.objetivo}" style="width:100%; height:10px;"></progress>
+        <div style="font-size:0.8rem; color:gray; margin-top:5px;">${formatCurrency(reached)} / ${formatCurrency(meta.objetivo)}</div>
+        <button onclick="showAddMoneyForm(${meta.id})" style="margin-top: 10px; padding: 0.5rem 1rem; font-size: 0.9rem;">+ Add Money</button>
+        <div id="addMoneyForm_${meta.id}" style="display:none; margin-top: 10px;">
+          <form onsubmit="addMoneyToGoal(event, ${meta.id})">
+            <input type="number" name="amount" placeholder="Monto" required style="width: 100%; margin-bottom: 5px;"/>
+            <select name="method" style="width: 100%; margin-bottom: 5px;">
+              <option value="Efectivo">Efectivo</option>
+              <option value="Tarjeta">Tarjeta</option>
+            </select>
+            <button type="submit" style="width: 100%;">Confirmar</button>
+          </form>
+        </div>
+      `;
+      els.goalsContainer.appendChild(card);
+    });
+  };
+
+  window.showAddMoneyForm = (id) => {
+    const form = document.getElementById(`addMoneyForm_${id}`);
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  };
+
+  window.addMoneyToGoal = (e, id) => {
+    e.preventDefault();
+    const form = e.target;
+    const amount = parseInt(form.amount.value) || 0;
+    const method = form.method.value;
+
+    if (amount > 0) {
+      const goal = state.goals.find(g => g.id === id);
+      if (goal) {
+        goal.reached = (goal.reached || 0) + amount;
+        if (method === 'Efectivo') {
+          state.currentCash = Math.max(0, state.currentCash - amount);
+        } else {
+          state.currentCard = Math.max(0, state.currentCard - amount);
+        }
+
+        state.expenses.push({
+          date: today,
+          place: "System",
+          description: `Allocation to Goal: ${goal.nombre}`,
+          category: "Ahorro",
+          amount,
+          method
+        });
+
+        if (today === new Date().toISOString().split('T')[0]) {
+          todaysSpent += amount;
+          localStorage.setItem('myTodaysBalance', todaysSpent);
+        }
+
+        localStorage.setItem('myCustomGoals', JSON.stringify(state.goals));
+        localStorage.setItem('currentCash', state.currentCash);
+        localStorage.setItem('currentCard', state.currentCard);
+        localStorage.setItem('myExpenses', JSON.stringify(state.expenses));
+
+        updateAllUI();
+        form.reset();
+        showAddMoneyForm(id); // Hide form
+      }
+    }
+  };
+
+  // Override goal creation to include reached
+  const originalGoalSubmit = document.getElementById('goalForm')?.onsubmit;
+  document.getElementById('goalForm').onsubmit = (e) => {
+    e.preventDefault();
+    const name = document.getElementById('goalName').value.trim();
+    const target = parseInt(document.getElementById('goalTarget').value) || 0;
+    if (name && target > 0) {
+      state.goals.push({ id: Date.now(), nombre: name, objetivo: target, reached: 0 });
+      localStorage.setItem('myCustomGoals', JSON.stringify(state.goals));
+      updateAllUI();
+      e.target.reset();
+      els.goalFormContainer.style.display = 'none';
+    }
+  };
+
+    // NEW: Immediate deduction for new fixed passives (reemplazo mejorado)
+  if (els.wishlistForm) {
+    els.wishlistForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const name = document.getElementById('itemName').value.trim();
+      const amount = parseFloat(document.getElementById('itemPrice').value) || 0;
+
+      if (name && amount > 0) {
+        // Agregar el pasivo
+        state.fixedPassives.push({ name, amount });
+        
+        // DEDUCCIÓN INMEDIATA desde la tarjeta
+        state.currentCard = Math.max(0, state.currentCard - amount);
+        
+        // Registrar como gasto (para que aparezca en historial y cálculos)
+        state.expenses.push({
+          date: today,
+          place: "Sistema",
+          description: `Deducción inicial pasivo fijo: ${name}`,
+          category: "Pasivos Fijos",
+          amount: amount,
+          method: "Tarjeta"
+        });
+
+        // Guardar todo
+        localStorage.setItem('fixedPassives', JSON.stringify(state.fixedPassives));
+        localStorage.setItem('currentCard', state.currentCard);
+        localStorage.setItem('myExpenses', JSON.stringify(state.expenses));
+
+        // Feedback visual
+        alert(`¡Deducción inmediata!\nSe restaron ${formatCurrency(amount)} de Tarjeta por ${name}`);
+        
+        // Limpiar y actualizar UI
+        e.target.reset();
+        updateAllUI();
+        
+        console.log("Pasivo fijo añadido + deducción inmediata:", { name, amount, newCard: state.currentCard });
+      }
+    });
+  }
+
+  // Re-initialize UI to reflect changes
   updateAllUI();
 });
